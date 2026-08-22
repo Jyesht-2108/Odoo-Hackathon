@@ -24,6 +24,31 @@ export const SignIn = () => {
     moveY: Math.random() * 300 - 150,
   })), []);
 
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [trail, setTrail] = useState<{ x: number, y: number, id: number }[]>([]);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    setMousePosition({ x, y });
+    
+    const newPoint = { x, y, id: Date.now() + Math.random() };
+    setTrail(prev => [...prev, newPoint]);
+    
+    // Auto-remove point to create fading comet tail effect
+    setTimeout(() => {
+      setTrail(prev => prev.filter(p => p.id !== newPoint.id));
+    }, 400); // Tail length duration
+  };
+
+  const handleMouseLeave = () => {
+    setTrail([]);
+  };
+
   const handleSignIn = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -50,8 +75,39 @@ export const SignIn = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 relative overflow-hidden px-4 sm:px-6 lg:px-8">
+    <div 
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      className="min-h-screen flex items-center justify-center bg-indigo-950 relative overflow-hidden px-4 sm:px-6 lg:px-8"
+    >
       
+      {/* Comet Tail Tracker (Continuous Glowing Line over entire page) */}
+      <svg className="absolute inset-0 pointer-events-none z-50 w-full h-full">
+        <defs>
+          <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="4" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+        </defs>
+        {trail.length > 1 && (
+          <polyline
+            points={trail.map(p => `${p.x},${p.y}`).join(' ')}
+            fill="none"
+            stroke="rgba(255, 255, 255, 0.9)"
+            strokeWidth="6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            filter="url(#glow)"
+            className="mix-blend-screen"
+            style={{
+              transition: 'opacity 0.2s',
+              opacity: trail.length > 2 ? 1 : 0
+            }}
+          />
+        )}
+      </svg>
+
       {/* Animated Floating Bubbles Background (Glowing on dark bg) */}
       {bubbles.map(bubble => (
         <motion.div 
@@ -86,7 +142,10 @@ export const SignIn = () => {
         initial="hidden"
         animate="visible"
       >
-        <motion.div variants={itemVariants} className="card p-8 shadow-[0_0_40px_rgba(0,0,0,0.3)] border-white/20 bg-white/95 backdrop-blur-2xl relative overflow-hidden">
+        <motion.div 
+          variants={itemVariants} 
+          className="card p-8 shadow-[0_0_40px_rgba(0,0,0,0.3)] border-white/20 bg-white/95 backdrop-blur-2xl relative overflow-hidden group"
+        >
           
           {/* Slick Internal Animated Lights - Faster & Brighter */}
           <motion.div
