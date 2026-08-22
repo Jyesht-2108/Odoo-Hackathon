@@ -4,14 +4,16 @@ from pathlib import Path
 from dotenv import load_dotenv
 import psycopg2
 from psycopg2.extras import execute_values
-from openai import OpenAI
+import google.generativeai as genai
 
 # Load environment variables
 load_dotenv()
 
-# Initialize OpenAI Client
-# Ensure OPENAI_API_KEY is set in your .env file
-client = OpenAI()
+# Initialize Gemini Client
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    raise ValueError("GEMINI_API_KEY environment variable is missing. Please add it to your .env file.")
+genai.configure(api_key=GEMINI_API_KEY)
 
 # Get DB Connection
 DB_URL = os.getenv("DATABASE_URL")
@@ -22,12 +24,13 @@ def get_db_connection():
     return psycopg2.connect(DB_URL)
 
 def get_embedding(text: str) -> list[float]:
-    """Get embedding from OpenAI using text-embedding-3-small."""
-    response = client.embeddings.create(
-        input=text,
-        model="text-embedding-3-small"
+    """Get embedding from Gemini using text-embedding-004 (768 dimensions)."""
+    result = genai.embed_content(
+        model="models/text-embedding-004",
+        content=text,
+        task_type="retrieval_document"
     )
-    return response.data[0].embedding
+    return result['embedding']
 
 def chunk_text(text: str) -> list[str]:
     """Simple paragraph-level chunking by splitting on double newlines."""
@@ -35,7 +38,7 @@ def chunk_text(text: str) -> list[str]:
     return chunks
 
 def ingest_policies():
-    print("Starting policy ingestion...")
+    print("Starting policy ingestion with Gemini (768 dimensions)...")
     
     # Connect to Supabase DB
     conn = get_db_connection()
