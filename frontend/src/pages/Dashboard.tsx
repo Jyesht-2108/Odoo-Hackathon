@@ -1,7 +1,8 @@
-import React from 'react';
-import { Users, Briefcase, CalendarCheck, TrendingUp, MoreHorizontal, Download } from 'lucide-react';
+import React, { useState } from 'react';
+import { Users, Briefcase, CalendarCheck, TrendingUp, MoreHorizontal, Download, PlayCircle, StopCircle, AlertTriangle } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { motion } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
 
 const areaData = [
   { name: 'Jan', total: 320 },
@@ -46,6 +47,9 @@ const StatCard = ({ title, value, change, icon: Icon, trend, colorClass }: any) 
 );
 
 export const Dashboard = () => {
+  const { user } = useAuth();
+  const [isCheckedIn, setIsCheckedIn] = useState(false);
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
@@ -59,8 +63,28 @@ export const Dashboard = () => {
           <p className="text-slate-500 mt-1">Welcome back! Here's what's happening today.</p>
         </div>
         <div className="flex gap-3">
-          <button className="btn btn-outline px-4 gap-2"><CalendarCheck className="h-4 w-4"/> Date Range</button>
-          <button className="btn btn-primary px-4 gap-2"><Download className="h-4 w-4"/> Export</button>
+          {user?.role === 'EMPLOYEE' && (
+            <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm mr-2">
+              <div className="flex flex-col items-end border-r border-slate-200 pr-3">
+                <span className="text-[10px] uppercase font-bold text-slate-400">Status</span>
+                <span className={`text-xs font-semibold ${isCheckedIn ? 'text-emerald-600' : 'text-slate-600'}`}>
+                  {isCheckedIn ? 'Checked In' : 'Checked Out'}
+                </span>
+              </div>
+              <button 
+                onClick={() => setIsCheckedIn(!isCheckedIn)}
+                className={`btn h-8 px-3 gap-2 ${isCheckedIn ? 'btn-outline border-rose-200 text-rose-600 hover:bg-rose-50' : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm shadow-emerald-500/20'}`}
+              >
+                {isCheckedIn ? <><StopCircle className="h-4 w-4"/> End Shift</> : <><PlayCircle className="h-4 w-4"/> Start Shift</>}
+              </button>
+            </div>
+          )}
+          {(user?.role === 'ADMIN' || user?.role === 'HR') && (
+            <>
+              <button className="btn btn-outline px-4 gap-2"><CalendarCheck className="h-4 w-4"/> Date Range</button>
+              <button className="btn btn-primary px-4 gap-2"><Download className="h-4 w-4"/> Export</button>
+            </>
+          )}
         </div>
       </motion.div>
 
@@ -147,6 +171,53 @@ export const Dashboard = () => {
           </div>
         </div>
       </motion.div>
+
+      {/* Burnout Risk AI Section (Admin/HR Only) */}
+      {(user?.role === 'ADMIN' || user?.role === 'HR') && (
+        <motion.div variants={itemVariants} className="card p-6 border-rose-200 bg-rose-50/30">
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg text-rose-900">AI Burnout Risk Alerts</h3>
+                <p className="text-sm text-rose-600/80">Predictive analytics based on attendance and leave patterns.</p>
+              </div>
+            </div>
+            <button className="text-sm font-medium text-rose-600 hover:text-rose-700">View All Risks</button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white p-4 rounded-xl border border-rose-100 shadow-sm flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-bold">AS</div>
+                <div>
+                  <h4 className="font-semibold text-slate-900">Alice Smith</h4>
+                  <p className="text-xs text-slate-500">Engineering • 187 days without leave</p>
+                </div>
+              </div>
+              <div className="flex flex-col items-end">
+                <span className="text-rose-600 font-bold text-lg">89%</span>
+                <span className="text-[10px] uppercase font-bold text-rose-400">Risk Score</span>
+              </div>
+            </div>
+            <div className="bg-white p-4 rounded-xl border border-orange-100 shadow-sm flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-bold">BJ</div>
+                <div>
+                  <h4 className="font-semibold text-slate-900">Bob Jones</h4>
+                  <p className="text-xs text-slate-500">HR • Avg checkout 45m later this month</p>
+                </div>
+              </div>
+              <div className="flex flex-col items-end">
+                <span className="text-orange-500 font-bold text-lg">72%</span>
+                <span className="text-[10px] uppercase font-bold text-orange-400">Risk Score</span>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
     </motion.div>
   );
 };

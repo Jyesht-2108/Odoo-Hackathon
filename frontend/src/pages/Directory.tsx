@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Search, Filter, Mail, Phone, MapPin, Briefcase } from 'lucide-react';
+import { Search, Filter, Mail, Phone, Briefcase, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const MOCK_EMPLOYEES = [
-  { id: 1, name: 'Alice Smith', role: 'Senior Developer', department: 'Engineering', email: 'alice@dayflow.com', phone: '+1 234 567 890', status: 'PRESENT' },
-  { id: 2, name: 'Bob Jones', role: 'HR Manager', department: 'Human Resources', email: 'bob@dayflow.com', phone: '+1 987 654 321', status: 'ON_LEAVE' },
-  { id: 3, name: 'Charlie Davis', role: 'Product Manager', department: 'Product', email: 'charlie@dayflow.com', phone: '+1 555 123 456', status: 'ABSENT' },
-  { id: 4, name: 'Diana Prince', role: 'UX Designer', department: 'Design', email: 'diana@dayflow.com', phone: '+1 555 987 654', status: 'PRESENT' },
-  { id: 5, name: 'Ethan Hunt', role: 'DevOps Engineer', department: 'Engineering', email: 'ethan@dayflow.com', phone: '+1 444 333 222', status: 'PRESENT' },
+  { id: 1, name: 'Alice Smith', role: 'Senior Developer', department: 'Engineering', email: 'alice@dayflow.com', phone: '+1 234 567 890', status: 'PRESENT', burnoutRisk: 89 },
+  { id: 2, name: 'Bob Jones', role: 'HR Manager', department: 'Human Resources', email: 'bob@dayflow.com', phone: '+1 987 654 321', status: 'ON_LEAVE', burnoutRisk: 72 },
+  { id: 3, name: 'Charlie Davis', role: 'Product Manager', department: 'Product', email: 'charlie@dayflow.com', phone: '+1 555 123 456', status: 'ABSENT', burnoutRisk: 15 },
+  { id: 4, name: 'Diana Prince', role: 'UX Designer', department: 'Design', email: 'diana@dayflow.com', phone: '+1 555 987 654', status: 'PRESENT', burnoutRisk: 22 },
+  { id: 5, name: 'Ethan Hunt', role: 'DevOps Engineer', department: 'Engineering', email: 'ethan@dayflow.com', phone: '+1 444 333 222', status: 'PRESENT', burnoutRisk: 41 },
 ];
 
 export const Directory = () => {
@@ -93,6 +93,15 @@ export const Directory = () => {
                 <span>{emp.phone}</span>
               </div>
             </div>
+
+            {(user?.role === 'ADMIN' || user?.role === 'HR') && emp.burnoutRisk > 70 && (
+              <div className="mt-4 bg-rose-50 border border-rose-100 rounded-lg p-2.5 flex justify-between items-center">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-rose-700">
+                  <AlertTriangle className="h-3.5 w-3.5" /> High Risk
+                </div>
+                <div className="text-xs font-bold text-rose-700">{emp.burnoutRisk}% Score</div>
+              </div>
+            )}
           </div>
         ))}
       </div>

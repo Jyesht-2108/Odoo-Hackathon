@@ -14,7 +14,7 @@ export const SignIn = () => {
     let role: Role = 'EMPLOYEE';
     if (email.includes('admin')) role = 'ADMIN';
     if (email.includes('hr')) role = 'HR';
-    
+
     login(role);
     navigate('/');
   };
@@ -24,7 +24,7 @@ export const SignIn = () => {
       <div className="w-full max-w-md space-y-8 card p-8">
         <div>
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-md bg-accent text-accent-foreground text-xl font-bold">
-            D
+            Dayflow
           </div>
           <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-slate-900">
             Sign in to your account
