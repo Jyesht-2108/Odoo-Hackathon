@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth, type Role } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
-import { Mail, Lock, ArrowRight } from 'lucide-react';
+import { Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
 
 export const SignIn = () => {
   const navigate = useNavigate();
@@ -10,6 +10,7 @@ export const SignIn = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   // Generate deterministic bubbles to avoid re-render jumps
   const bubbles = React.useMemo(() => [...Array(20)].map((_, i) => ({
@@ -49,19 +50,19 @@ export const SignIn = () => {
     setTrail([]);
   };
 
-  const handleSignIn = (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
     
-    // Simulate API call
-    setTimeout(() => {
-      let role: Role = 'EMPLOYEE';
-      if (email.includes('admin')) role = 'ADMIN';
-      if (email.includes('hr')) role = 'HR';
-      
-      login(role);
+    try {
+      await login(email, password);
       navigate('/');
-    }, 800);
+    } catch (err: any) {
+      setError(err?.message || 'Invalid credentials. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const containerVariants = {
@@ -177,6 +178,13 @@ export const SignIn = () => {
             </p>
           </div>
 
+          {error && (
+            <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 flex items-center gap-2 text-sm text-red-700">
+              <AlertCircle className="h-4 w-4 flex-shrink-0" />
+              {error}
+            </div>
+          )}
+
           <form className="space-y-5" onSubmit={handleSignIn}>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
@@ -188,7 +196,7 @@ export const SignIn = () => {
                   type="email"
                   required
                   className="block w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-white/50 focus:bg-white"
-                  placeholder="admin@test.com"
+                  placeholder="you@company.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -251,12 +259,6 @@ export const SignIn = () => {
               )}
             </motion.button>
           </form>
-          
-          <div className="mt-6 text-center text-xs text-slate-500 bg-slate-50/80 rounded-lg p-3 border border-slate-100">
-            <span className="font-semibold text-slate-700">Demo Roles:</span><br/>
-            Use <code className="bg-white px-1 py-0.5 rounded border border-slate-200 text-indigo-700">admin@test.com</code> for Admin/HR view.<br/>
-            Use <code className="bg-white px-1 py-0.5 rounded border border-slate-200 text-indigo-700">user@test.com</code> for Employee view.
-          </div>
           </div>
         </motion.div>
       </motion.div>

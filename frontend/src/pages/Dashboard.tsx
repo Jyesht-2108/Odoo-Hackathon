@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Users, Briefcase, CalendarCheck, TrendingUp, MoreHorizontal, Download, PlayCircle, StopCircle, AlertTriangle } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../lib/api';
 
 const areaData = [
   { name: 'Jan', total: 320 },
@@ -49,6 +50,57 @@ const StatCard = ({ title, value, change, icon: Icon, trend, colorClass }: any) 
 export const Dashboard = () => {
   const { user } = useAuth();
   const [isCheckedIn, setIsCheckedIn] = useState(false);
+  const [checkLoading, setCheckLoading] = useState(false);
+  const [employeeCount, setEmployeeCount] = useState<number | null>(null);
+  const [pendingLeaves, setPendingLeaves] = useState<number | null>(null);
+
+  // Fetch today's attendance to determine initial check-in state
+  useEffect(() => {
+    if (user?.role === 'EMPLOYEE' && user.employee_id) {
+      const today = new Date().toISOString().split('T')[0];
+      api.get<Array<{ check_in: string | null; check_out: string | null }>>(`/attendance?employee_id=${user.employee_id}&date=${today}`)
+        .then(records => {
+          if (records.length > 0 && records[0].check_in && !records[0].check_out) {
+            setIsCheckedIn(true);
+          }
+        })
+        .catch(() => {});
+    }
+
+    // Fetch stats for ADMIN/HR
+    if (user?.role === 'ADMIN' || user?.role === 'HR') {
+      api.get<Array<any>>('/employees')
+        .then(emps => setEmployeeCount(emps.length))
+        .catch(() => {});
+      api.get<Array<any>>('/leave-requests?status=PENDING')
+        .then(reqs => setPendingLeaves(reqs.length))
+        .catch(() => {});
+    }
+  }, [user]);
+
+  const handleCheckIn = async () => {
+    setCheckLoading(true);
+    try {
+      await api.post('/attendance/check-in');
+      setIsCheckedIn(true);
+    } catch (err: any) {
+      alert(err.message || 'Check-in failed');
+    } finally {
+      setCheckLoading(false);
+    }
+  };
+
+  const handleCheckOut = async () => {
+    setCheckLoading(true);
+    try {
+      await api.post('/attendance/check-out');
+      setIsCheckedIn(false);
+    } catch (err: any) {
+      alert(err.message || 'Check-out failed');
+    } finally {
+      setCheckLoading(false);
+    }
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -60,7 +112,7 @@ export const Dashboard = () => {
       <motion.div variants={itemVariants} className="flex justify-between items-center border-b border-slate-200/60 pb-6">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-slate-900">Dashboard Overview</h2>
-          <p className="text-slate-500 mt-1">Welcome back! Here's what's happening today.</p>
+          <p className="text-slate-500 mt-1">Welcome back, {user?.name?.split(' ')[0] || 'there'}! Here's what's happening today.</p>
         </div>
         <div className="flex gap-3">
           {user?.role === 'EMPLOYEE' && (
@@ -72,10 +124,17 @@ export const Dashboard = () => {
                 </span>
               </div>
               <button 
-                onClick={() => setIsCheckedIn(!isCheckedIn)}
-                className={`btn h-8 px-3 gap-2 ${isCheckedIn ? 'btn-outline border-rose-200 text-rose-600 hover:bg-rose-50' : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm shadow-emerald-500/20'}`}
+                onClick={isCheckedIn ? handleCheckOut : handleCheckIn}
+                disabled={checkLoading}
+                className={`btn h-8 px-3 gap-2 disabled:opacity-50 ${isCheckedIn ? 'btn-outline border-rose-200 text-rose-600 hover:bg-rose-50' : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm shadow-emerald-500/20'}`}
               >
-                {isCheckedIn ? <><StopCircle className="h-4 w-4"/> End Shift</> : <><PlayCircle className="h-4 w-4"/> Start Shift</>}
+                {checkLoading ? (
+                  <div className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin" />
+                ) : isCheckedIn ? (
+                  <><StopCircle className="h-4 w-4"/> End Shift</>
+                ) : (
+                  <><PlayCircle className="h-4 w-4"/> Start Shift</>
+                )}
               </button>
             </div>
           )}
@@ -89,9 +148,9 @@ export const Dashboard = () => {
       </motion.div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Total Employees" value="352" change="+15%" icon={Users} trend="up" colorClass="bg-gradient-to-br from-indigo-500 to-violet-600" />
-        <StatCard title="Pending Leaves" value="22" change="-10%" icon={CalendarCheck} trend="down" colorClass="bg-gradient-to-br from-amber-400 to-orange-500" />
-        <StatCard title="New Hires" value="32" change="+12%" icon={Briefcase} trend="up" colorClass="bg-gradient-to-br from-emerald-400 to-teal-500" />
+        <StatCard title="Total Employees" value={employeeCount ?? '—'} change="+15%" icon={Users} trend="up" colorClass="bg-gradient-to-br from-indigo-500 to-violet-600" />
+        <StatCard title="Pending Leaves" value={pendingLeaves ?? '—'} change="-10%" icon={CalendarCheck} trend="down" colorClass="bg-gradient-to-br from-amber-400 to-orange-500" />
+        <StatCard title="New Hires" value="—" change="+12%" icon={Briefcase} trend="up" colorClass="bg-gradient-to-br from-emerald-400 to-teal-500" />
         <StatCard title="Happiness Rate" value="82%" change="-11%" icon={TrendingUp} trend="down" colorClass="bg-gradient-to-br from-rose-400 to-red-500" />
       </div>
 
@@ -172,7 +231,7 @@ export const Dashboard = () => {
         </div>
       </motion.div>
 
-      {/* Burnout Risk AI Section (Admin/HR Only) */}
+      {/* Burnout Risk AI Section (Admin/HR Only) — placeholder, teammate 4's scope */}
       {(user?.role === 'ADMIN' || user?.role === 'HR') && (
         <motion.div variants={itemVariants} className="card p-6 border-rose-200 bg-rose-50/30">
           <div className="flex justify-between items-center mb-6">
@@ -187,33 +246,8 @@ export const Dashboard = () => {
             </div>
             <button className="text-sm font-medium text-rose-600 hover:text-rose-700">View All Risks</button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white p-4 rounded-xl border border-rose-100 shadow-sm flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-bold">AS</div>
-                <div>
-                  <h4 className="font-semibold text-slate-900">Alice Smith</h4>
-                  <p className="text-xs text-slate-500">Engineering • 187 days without leave</p>
-                </div>
-              </div>
-              <div className="flex flex-col items-end">
-                <span className="text-rose-600 font-bold text-lg">89%</span>
-                <span className="text-[10px] uppercase font-bold text-rose-400">Risk Score</span>
-              </div>
-            </div>
-            <div className="bg-white p-4 rounded-xl border border-orange-100 shadow-sm flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-bold">BJ</div>
-                <div>
-                  <h4 className="font-semibold text-slate-900">Bob Jones</h4>
-                  <p className="text-xs text-slate-500">HR • Avg checkout 45m later this month</p>
-                </div>
-              </div>
-              <div className="flex flex-col items-end">
-                <span className="text-orange-500 font-bold text-lg">72%</span>
-                <span className="text-[10px] uppercase font-bold text-orange-400">Risk Score</span>
-              </div>
-            </div>
+          <div className="text-center py-6 text-rose-600/60 text-sm">
+            Burnout scoring will be available once teammate 4's analytics module is integrated.
           </div>
         </motion.div>
       )}

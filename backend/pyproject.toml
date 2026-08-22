@@ -1,0 +1,17 @@
+[project]
+name = "dayflow-backend"
+version = "1.0.0"
+description = "Dayflow HRMS — FastAPI backend"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "supabase>=2.0.0",
+    "pyjwt>=2.8.0",
+    "python-dotenv>=1.0.0",
+    "pydantic[email]>=2.0.0",
+]
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"

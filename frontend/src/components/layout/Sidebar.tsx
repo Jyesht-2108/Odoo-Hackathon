@@ -1,10 +1,10 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Calendar, Clock, Settings, UserPlus } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, Clock, Settings, UserPlus, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
 
 export const Sidebar = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const location = useLocation();
 
   const containerVariants = {
@@ -139,14 +139,23 @@ export const Sidebar = () => {
         </nav>
       </div>
       <motion.div variants={itemVariants} className="border-t border-slate-200/60 p-4">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-full bg-slate-200 flex items-center justify-center text-sm font-medium">
-            {user?.name.substring(0, 2).toUpperCase()}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-full bg-slate-200 flex items-center justify-center text-sm font-medium">
+              {user?.name?.substring(0, 2).toUpperCase()}
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm font-medium">{user?.name}</span>
+              <span className="text-xs text-slate-500">{user?.role}</span>
+            </div>
           </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium">{user?.name}</span>
-            <span className="text-xs text-slate-500">{user?.role}</span>
-          </div>
+          <button
+            onClick={() => { logout(); window.location.href = '/login'; }}
+            className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+            title="Sign Out"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
         </div>
       </motion.div>
     </motion.div>
